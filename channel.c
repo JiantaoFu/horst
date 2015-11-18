@@ -159,8 +159,13 @@ channel_change(int idx, enum chan_width width, bool ht40plus)
 
 	/* only 20 MHz channels don't need additional center freq, otherwise we fail here
 	 * quietly because the scanning code sometimes tries invalid HT40+/- channels */
-	if (center1 == 0 && !(width == CHAN_WIDTH_20_NOHT || width == CHAN_WIDTH_20))
+    if (center1 == 0 && !(width == CHAN_WIDTH_20_NOHT || width == CHAN_WIDTH_20)) {
+        printlog("ERROR: Failed to set CH %d (%d MHz) %s center %d",
+                 channels.chan[idx].chan, channels.chan[idx].freq,
+                 channel_width_string(width, ht40plus),
+                 center1);
 		return false;
+    }
 
 	if (!ifctrl_iwset_freq(conf.ifname, channels.chan[idx].freq, width, center1)) {
 		printlog("ERROR: Failed to set CH %d (%d MHz) %s center %d",
