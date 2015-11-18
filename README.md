@@ -54,10 +54,10 @@ getting or setting the channel are not implemented on OSX.
 
 You need cmake to build in OSX.
 
-        $ mkdir build
-        $ cd build
-        $ cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk ../
-        $ make
+	$ mkdir build
+	$ cd build
+	$ cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk ../
+	$ make
 
 You can also add "-G Xcode" to generate Xcode project.
 
