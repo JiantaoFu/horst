@@ -37,10 +37,10 @@ bool ifctrl_iwdel(__attribute__((unused))const char *interface) {
 	return false;
 };
 
-bool ifctrl_flags(__attribute__((unused))const char *interface, __attribute__((unused))bool up, __attribute__((unused))bool promisc) {
-        printlog("ifctrl_flags: not implemeneted");
-        return true;
-}
+//bool ifctrl_flags(__attribute__((unused))const char *interface, __attribute__((unused))bool up, __attribute__((unused))bool promisc) {
+//        printlog("ifctrl_flags: not implemeneted");
+//        return true;
+//}
 
 bool ifctrl_iwset_monitor(__attribute__((unused))const char *interface) {
 	printlog("set monitor: not implemented");

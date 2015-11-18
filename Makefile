@@ -83,7 +83,7 @@ endif
 all: $(NAME)
 
 .objdeps.mk: $(OBJS:%.o=%.c)
-	gcc -MM $^ >$@
+	gcc -MM -I. $^ >$@
 
 -include .objdeps.mk
 
