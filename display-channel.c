@@ -52,6 +52,7 @@ update_channel_win(WINDOW *win)
 		wattroff(win, A_BOLD);
 		l = 3;
 		for (int i = 0; (c = channel_get_idx_from_band_idx(b, i)) != -1; i++) {
+            col = channel_get_chan(c) > 14 ? COL_BAND2 : 2;
 			if (c == conf.channel_idx)
 				wattron(win, CYAN);
 			else

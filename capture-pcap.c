@@ -63,6 +63,18 @@ open_packet_socket(char* devname, __attribute__((unused)) int recv_buffer_size)
 		return -1;
 	}
 
+    ret = pcap_set_timeout(pcap_fp, 500);
+    if (ret < 0) {
+        fprintf(stderr, "Can't set timeout: %d\n", ret);
+        return -1;
+    }
+
+    ret = pcap_set_buffer_size(pcap_fp, 8<<20);
+    if (ret < 0) {
+        fprintf(stderr, "Can't set buffer size: %d\n", ret);
+        return -1;
+    }
+
 	pcap_set_promisc(pcap_fp, 1);
 
 #if defined(__APPLE__)

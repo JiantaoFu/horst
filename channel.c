@@ -225,7 +225,9 @@ channel_auto_change(void)
 				if (conf.channel_ht40plus)
 					new_idx = new_idx + 1;
 				conf.channel_ht40plus = !conf.channel_ht40plus; // toggle
-			}
+            } else {
+                ++new_idx;
+            }
 
 			if (new_idx >= channels.num_channels ||
 			    new_idx >= MAX_CHANNELS ||

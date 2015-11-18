@@ -62,55 +62,69 @@ int osx_get_channels(const char* devname, struct channel_list* channels) {
     NSString * interfaceName = [[NSString alloc] initWithUTF8String: devname];
     CWInterface * currentInterface = [wifiClient interfaceWithName: interfaceName];
     NSSet<CWChannel *> *supportedChannelsSet = [currentInterface supportedWLANChannels];
+    NSSortDescriptor *sort = [NSSortDescriptor sortDescriptorWithKey:@"channelNumber" ascending:YES];
+    NSArray * sortedChannels = [supportedChannelsSet sortedArrayUsingDescriptors:[NSArray arrayWithObject:sort]];
 
     channels->band[0].num_channels = 0;
     channels->band[1].num_channels = 0;
+    channels->band[0].max_chan_width = CHAN_WIDTH_20;
+    channels->band[1].max_chan_width = CHAN_WIDTH_40;
     channels->num_bands = 2;
 
     int i = 0;
-    for( id eachChannel in supportedChannelsSet )
+    NSInteger lastNum = -1;
+    for( id eachChannel in sortedChannels )
     {
-        channel_list_add(ieee80211_channel2freq([eachChannel channelNumber]));
-
+        NSInteger num = [eachChannel channelNumber];
         CWChannelBand band = [eachChannel channelBand];
         CWChannelWidth width = [eachChannel channelWidth];
-        int bandIdx = -1;
-        if( kCWChannelBand2GHz == band ) {
-            bandIdx = 0;
-        } else if( kCWChannelBand5GHz == band ) {
-            bandIdx = 1;
-        }
-        if( bandIdx > 0) {
-            ++channels->band[bandIdx].num_channels;
-            switch (width) {
-                case kCWChannelWidth20MHz:
-                    channels->band[bandIdx].max_chan_width = CHAN_WIDTH_20;
-                    break;
+        printlog("num: %ld, band: %ld, width: %ld", num, (long)band, (long)width);
 
-                case kCWChannelWidth40MHz:
-                    channels->band[bandIdx].max_chan_width = CHAN_WIDTH_40;
-                    break;
-
-                case kCWChannelWidth80MHz:
-                    channels->band[bandIdx].max_chan_width = CHAN_WIDTH_80;
-                    break;
-
-                case kCWChannelWidth160MHz:
-                    channels->band[bandIdx].max_chan_width = CHAN_WIDTH_160;
-                    break;
-
-                default:
-                    break;
-            }
+        if (lastNum != num ) {
+            channel_list_add(ieee80211_channel2freq(num));
             
-            channels->band[bandIdx].streams_rx = 0;
-            channels->band[bandIdx].streams_tx = 0;
+            int bandIdx = -1;
+            if( kCWChannelBand2GHz == band ) {
+                bandIdx = 0;
+            } else if( kCWChannelBand5GHz == band ) {
+                bandIdx = 1;
+            }
+            if( bandIdx >= 0) {
+                ++(channels->band[bandIdx].num_channels);
+//                switch (width) {
+//                    case kCWChannelWidth20MHz:
+//                        channels->band[bandIdx].max_chan_width = CHAN_WIDTH_20;
+//                        break;
+//
+//                    case kCWChannelWidth40MHz:
+//                        channels->band[bandIdx].max_chan_width = CHAN_WIDTH_40;
+//                        break;
+//
+//                    case kCWChannelWidth80MHz:
+//                        channels->band[bandIdx].max_chan_width = CHAN_WIDTH_80;
+//                        break;
+//
+//                    case kCWChannelWidth160MHz:
+//                        channels->band[bandIdx].max_chan_width = CHAN_WIDTH_160;
+//                        break;
+//
+//                    default:
+//                        break;
+//                }
+
+                channels->band[bandIdx].streams_rx = 0;
+                channels->band[bandIdx].streams_tx = 0;
+            }
         }
 
+        lastNum = num;
         if( ++i > MAX_CHANNELS) {
             break;
         }
     }
+
+    printlog("band 0 channels: %d", channels->band[0].num_channels);
+    printlog("band 1 channels: %d", channels->band[1].num_channels);
 
     [supportedChannelsSet release];
     [currentInterface release];
