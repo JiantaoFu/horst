@@ -148,6 +148,16 @@ bool ifctrl_init() {
 };
 
 void ifctrl_finish() {
+
+    CWWiFiClient * wifiClient = [CWWiFiClient sharedWiFiClient];
+    NSString * interfaceName = [[NSString alloc] initWithUTF8String: conf.ifname];
+    CWInterface * currentInterface = [wifiClient interfaceWithName: interfaceName];
+
+    CWNetwork * _network = [[CWNetwork alloc] init];
+    [currentInterface associateToNetwork:_network password:nil error:nil];
+
+    [currentInterface release];
+    [interfaceName release];
 };
 
 bool ifctrl_iwadd_monitor(__attribute__((unused))const char *interface, __attribute__((unused))const char *monitor_interface) {
