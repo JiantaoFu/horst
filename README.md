@@ -50,6 +50,16 @@ To experimentally build for Mac OSX or other Unix using libpcap use:
 Please note that PCAP and OSX support is not well tested and some features, like
 getting or setting the channel are not implemented on OSX.
 
+## Building using cmake
+
+You need cmake to build in OSX.
+
+        $ mkdir build
+        $ cd build
+        $ cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk ../
+        $ make
+
+You can also add "-G Xcode" to generate Xcode project.
 
 ## Background
 
