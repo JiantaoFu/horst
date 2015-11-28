@@ -25,6 +25,7 @@ set(SOURCES
     display.c
     essid.c
     ieee80211_util.c
+    ifctrl-ioctl.c
     listsort.c
     main.c
     network.c
@@ -51,7 +52,6 @@ add_definitions(-DDO_DEBUG=${DO_DEBUG})
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     add_definitions(-DPCAP)
     add_definitions(-D__APPLE__)
-    set(CMAKE_C_FLAGS "-x objective-c")
     list(APPEND SOURCES capture-pcap.c)
     list(APPEND SOURCES ifctrl-osx.m)
     list(APPEND DEPENDS -lpcap)

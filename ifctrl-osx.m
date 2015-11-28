@@ -84,7 +84,7 @@ int osx_get_channels(const char* devname, struct channel_list* channels) {
     CWInterface * currentInterface = [wifiClient interfaceWithName: interfaceName];
     [interfaceName release];
 
-    NSSet<CWChannel *> * supportedChannelsSet = [currentInterface supportedWLANChannels];
+    NSSet * supportedChannelsSet = [currentInterface supportedWLANChannels];
     NSSortDescriptor * sort = [NSSortDescriptor sortDescriptorWithKey:@"channelNumber" ascending:YES];
     NSArray * sortedChannels = [supportedChannelsSet sortedArrayUsingDescriptors:[NSArray arrayWithObject:sort]];
 
@@ -166,11 +166,6 @@ bool ifctrl_iwdel(__attribute__((unused))const char *interface) {
     printlog("iwdel: not implemented");
     return false;
 };
-
-bool ifctrl_flags(__attribute__((unused))const char *interface, __attribute__((unused))bool up, __attribute__((unused))bool promisc) {
-        printlog("ifctrl_flags: not implemeneted");
-        return true;
-}
 
 bool ifctrl_iwset_monitor(__attribute__((unused))const char *interface) {
     printlog("set monitor: not implemented");
