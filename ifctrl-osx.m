@@ -144,7 +144,7 @@ bool ifctrl_init() {
     [interfaceName release];
 
     [currentInterface disassociate];
-	return true;
+    return true;
 };
 
 void ifctrl_finish() {
@@ -158,13 +158,13 @@ void ifctrl_finish() {
 };
 
 bool ifctrl_iwadd_monitor(__attribute__((unused))const char *interface, __attribute__((unused))const char *monitor_interface) {
-	printlog("add monitor: not implemented");
-	return false;
+    printlog("add monitor: not implemented");
+    return false;
 };
 
 bool ifctrl_iwdel(__attribute__((unused))const char *interface) {
-	printlog("iwdel: not implemented");
-	return false;
+    printlog("iwdel: not implemented");
+    return false;
 };
 
 bool ifctrl_flags(__attribute__((unused))const char *interface, __attribute__((unused))bool up, __attribute__((unused))bool promisc) {
@@ -173,8 +173,8 @@ bool ifctrl_flags(__attribute__((unused))const char *interface, __attribute__((u
 }
 
 bool ifctrl_iwset_monitor(__attribute__((unused))const char *interface) {
-	printlog("set monitor: not implemented");
-	return false;
+    printlog("set monitor: not implemented");
+    return false;
 };
 
 bool ifctrl_iwset_freq(__attribute__((unused))const char *interface, __attribute__((unused))unsigned int freq,
@@ -185,8 +185,8 @@ bool ifctrl_iwset_freq(__attribute__((unused))const char *interface, __attribute
 };
 
 bool ifctrl_iwget_interface_info(__attribute__((unused))const char *interface) {
-	printlog("get interface info: not implemented");
-	return false;
+    printlog("get interface info: not implemented");
+    return false;
 };
 
 bool ifctrl_iwget_freqlist(__attribute__((unused))int phy,  struct channel_list* channels) {
@@ -197,5 +197,5 @@ bool ifctrl_iwget_freqlist(__attribute__((unused))int phy,  struct channel_list*
 };
 
 bool ifctrl_is_monitor() {
-	return true;
+    return true;
 };

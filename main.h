@@ -31,8 +31,6 @@
 #define VERSION "5.0-pre"
 #define CONFIG_FILE "/etc/horst.conf"
 
-#define IF_NAMESIZE     16
-
 #ifndef DO_DEBUG
 #define DO_DEBUG 0
 #endif

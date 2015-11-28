@@ -10,8 +10,8 @@ ENDIF (CMAKE_COMPILER_IS_GNUCC)
 include_directories ("${PROJECT_SOURCE_DIR}")
 
 set(SOURCES
-    average.c 
-    channel.c 
+    average.c
+    channel.c
     conf_options.c
     control.c
     display-channel.c
