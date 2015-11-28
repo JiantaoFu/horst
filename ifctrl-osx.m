@@ -30,6 +30,7 @@ bool osx_set_freq(const char *interface, unsigned int freq)
     CWWiFiClient * wifiClient = [CWWiFiClient sharedWiFiClient];
     NSString * interfaceName = [[NSString alloc] initWithUTF8String: interface];
     CWInterface * currentInterface = [wifiClient interfaceWithName: interfaceName];
+    [interfaceName release];
 
     NSSet * channels = [currentInterface supportedWLANChannels];
     CWChannel * wlanChannel = nil;
@@ -45,33 +46,58 @@ bool osx_set_freq(const char *interface, unsigned int freq)
         if( !result ) {
             printlog("set channel %ld err: %s", (long)[wlanChannel channelNumber], [[err localizedDescription] UTF8String]);
             ret = false;
-        } else {
-            //printlog("set channel %ld success: %s", (long)[wlanChannel channelNumber]);
         }
     }
 
-    [currentInterface release];
-    [interfaceName release];
-//    [wifiClient release];
-
     return ret;
+}
+
+enum chan_width get_channel_width(CWChannelWidth width)
+{
+    enum chan_width current_width = CHAN_WIDTH_UNSPEC;
+    switch (width) {
+        case kCWChannelWidth20MHz:
+            current_width = CHAN_WIDTH_20;
+            break;
+
+        case kCWChannelWidth40MHz:
+            current_width = CHAN_WIDTH_40;
+            break;
+
+        case kCWChannelWidth80MHz:
+            current_width = CHAN_WIDTH_80;
+            break;
+
+        case kCWChannelWidth160MHz:
+            current_width = CHAN_WIDTH_160;
+            break;
+
+        default:
+            break;
+    }
+    return current_width;
 }
 
 int osx_get_channels(const char* devname, struct channel_list* channels) {
     CWWiFiClient * wifiClient = [CWWiFiClient sharedWiFiClient];
     NSString * interfaceName = [[NSString alloc] initWithUTF8String: devname];
     CWInterface * currentInterface = [wifiClient interfaceWithName: interfaceName];
-    NSSet<CWChannel *> *supportedChannelsSet = [currentInterface supportedWLANChannels];
-    NSSortDescriptor *sort = [NSSortDescriptor sortDescriptorWithKey:@"channelNumber" ascending:YES];
+    [interfaceName release];
+
+    NSSet<CWChannel *> * supportedChannelsSet = [currentInterface supportedWLANChannels];
+    NSSortDescriptor * sort = [NSSortDescriptor sortDescriptorWithKey:@"channelNumber" ascending:YES];
     NSArray * sortedChannels = [supportedChannelsSet sortedArrayUsingDescriptors:[NSArray arrayWithObject:sort]];
 
-    channels->band[0].num_channels = 0;
-    channels->band[1].num_channels = 0;
-    channels->band[0].max_chan_width = CHAN_WIDTH_20;
-    channels->band[1].max_chan_width = CHAN_WIDTH_40;
-    channels->num_bands = 2;
-
     int i = 0;
+    for (int i = 0; i < MAX_BANDS; ++i) {
+        channels->band[i].num_channels = 0;
+        channels->band[i].streams_rx = 0;
+        channels->band[i].streams_tx = 0;
+        channels->band[i].max_chan_width = CHAN_WIDTH_20;
+    }
+    channels->num_bands = MAX_BANDS;
+
+    i = 0;
     NSInteger lastNum = -1;
     for( id eachChannel in sortedChannels )
     {
@@ -82,39 +108,21 @@ int osx_get_channels(const char* devname, struct channel_list* channels) {
 
         if (lastNum != num ) {
             channel_list_add(ieee80211_channel2freq(num));
-            
-            int bandIdx = -1;
-            if( kCWChannelBand2GHz == band ) {
-                bandIdx = 0;
-            } else if( kCWChannelBand5GHz == band ) {
-                bandIdx = 1;
-            }
-            if( bandIdx >= 0) {
-                ++(channels->band[bandIdx].num_channels);
-//                switch (width) {
-//                    case kCWChannelWidth20MHz:
-//                        channels->band[bandIdx].max_chan_width = CHAN_WIDTH_20;
-//                        break;
-//
-//                    case kCWChannelWidth40MHz:
-//                        channels->band[bandIdx].max_chan_width = CHAN_WIDTH_40;
-//                        break;
-//
-//                    case kCWChannelWidth80MHz:
-//                        channels->band[bandIdx].max_chan_width = CHAN_WIDTH_80;
-//                        break;
-//
-//                    case kCWChannelWidth160MHz:
-//                        channels->band[bandIdx].max_chan_width = CHAN_WIDTH_160;
-//                        break;
-//
-//                    default:
-//                        break;
-//                }
+        }
 
-                channels->band[bandIdx].streams_rx = 0;
-                channels->band[bandIdx].streams_tx = 0;
+        int bandIdx = -1;
+        if( kCWChannelBand2GHz == band ) {
+            bandIdx = 0;
+        } else if( kCWChannelBand5GHz == band ) {
+            bandIdx = 1;
+        }
+        if( bandIdx >= 0) {
+            if (lastNum != num ) {
+                ++(channels->band[bandIdx].num_channels);
             }
+            enum chan_width w = get_channel_width(width);
+            channels->band[bandIdx].max_chan_width = \
+            channels->band[bandIdx].max_chan_width < w ? w : channels->band[bandIdx].max_chan_width;
         }
 
         lastNum = num;
@@ -126,11 +134,6 @@ int osx_get_channels(const char* devname, struct channel_list* channels) {
     printlog("band 0 channels: %d", channels->band[0].num_channels);
     printlog("band 1 channels: %d", channels->band[1].num_channels);
 
-    [supportedChannelsSet release];
-    [currentInterface release];
-    [interfaceName release];
-//    [wifiClient release];
-
     return i;
 }
 
@@ -138,26 +141,20 @@ bool ifctrl_init() {
     CWWiFiClient * wifiClient = [CWWiFiClient sharedWiFiClient];
     NSString * interfaceName = [[NSString alloc] initWithUTF8String: conf.ifname];
     CWInterface * currentInterface = [wifiClient interfaceWithName: interfaceName];
-    [currentInterface disassociate];
-
-    [currentInterface release];
     [interfaceName release];
-//    [wifiClient release];
 
+    [currentInterface disassociate];
 	return true;
 };
 
 void ifctrl_finish() {
-
     CWWiFiClient * wifiClient = [CWWiFiClient sharedWiFiClient];
     NSString * interfaceName = [[NSString alloc] initWithUTF8String: conf.ifname];
     CWInterface * currentInterface = [wifiClient interfaceWithName: interfaceName];
+    [interfaceName release];
 
     CWNetwork * _network = [[CWNetwork alloc] init];
     [currentInterface associateToNetwork:_network password:nil error:nil];
-
-    [currentInterface release];
-    [interfaceName release];
 };
 
 bool ifctrl_iwadd_monitor(__attribute__((unused))const char *interface, __attribute__((unused))const char *monitor_interface) {
