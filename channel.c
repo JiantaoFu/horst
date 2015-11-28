@@ -159,13 +159,9 @@ channel_change(int idx, enum chan_width width, bool ht40plus)
 
 	/* only 20 MHz channels don't need additional center freq, otherwise we fail here
 	 * quietly because the scanning code sometimes tries invalid HT40+/- channels */
-    if (center1 == 0 && !(width == CHAN_WIDTH_20_NOHT || width == CHAN_WIDTH_20)) {
-        printlog("ERROR: Failed to set CH %d (%d MHz) %s center %d",
-                 channels.chan[idx].chan, channels.chan[idx].freq,
-                 channel_width_string(width, ht40plus),
-                 center1);
+	if (center1 == 0 && !(width == CHAN_WIDTH_20_NOHT || width == CHAN_WIDTH_20)) {
 		return false;
-    }
+	}
 
 	if (!ifctrl_iwset_freq(conf.ifname, channels.chan[idx].freq, width, center1)) {
 		printlog("ERROR: Failed to set CH %d (%d MHz) %s center %d",
@@ -224,10 +220,10 @@ channel_auto_change(void)
 			if (max_width == CHAN_WIDTH_40) {
 				if (conf.channel_ht40plus)
 					new_idx = new_idx + 1;
-				conf.channel_ht40plus = !conf.channel_ht40plus; // toggle
-            } else {
-                ++new_idx;
-            }
+					conf.channel_ht40plus = !conf.channel_ht40plus; // toggle
+				} else {
+					++new_idx;
+				}
 
 			if (new_idx >= channels.num_channels ||
 			    new_idx >= MAX_CHANNELS ||
@@ -235,6 +231,7 @@ channel_auto_change(void)
 			     channel_get_chan(new_idx) > conf.channel_max))
 				new_idx = 0;
 
+			max_width = channel_get_band_from_idx(new_idx).max_chan_width;
 			ret = channel_change(new_idx, max_width, conf.channel_ht40plus);
 
 		/* try setting different channels in case we get errors only
