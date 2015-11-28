@@ -22,7 +22,6 @@
 
 #include <stdlib.h>
 #include <sys/time.h>
-//#include <net/if.h>
 
 #include "ccan/list/list.h"
 #include "average.h"
@@ -43,6 +42,10 @@
 #else
 #define DEBUG(...)
 #endif
+
+/* #include <net/if.h> conflicts with <linux/if.h> in ifctrl-wext and there does
+ * not seem to be a better solution that to just define IF_NAMESIZE ourselves */
+#define IF_NAMESIZE	16
 
 #define MAC_LEN			6
 #define MAX_CONF_VALUE_STRLEN	200
@@ -112,12 +115,12 @@ struct packet_info {
 
 	/* wlan mac */
 	unsigned int		wlan_len;	/* packet length */
-	u_int16_t		wlan_type;	/* frame control field */
+	uint16_t		wlan_type;	/* frame control field */
 	unsigned char		wlan_src[MAC_LEN]; /* transmitter (TA) */
 	unsigned char		wlan_dst[MAC_LEN]; /* receiver (RA) */
 	unsigned char		wlan_bssid[MAC_LEN];
 	char			wlan_essid[WLAN_MAX_SSID_LEN];
-	u_int64_t		wlan_tsf;	/* timestamp from beacon */
+	uint64_t		wlan_tsf;	/* timestamp from beacon */
 	unsigned int		wlan_bintval;	/* beacon interval */
 	unsigned int		wlan_mode;	/* AP, STA or IBSS */
 	unsigned char		wlan_channel;	/* channel from beacon, probe */
@@ -178,7 +181,7 @@ struct node_info {
 	unsigned char		wlan_bssid[MAC_LEN];
 	unsigned int		wlan_channel;	/* channel from beacon, probe frames */
 	unsigned int		wlan_mode;	/* AP, STA or IBSS */
-	u_int64_t		wlan_tsf;
+	uint64_t		wlan_tsf;
 	unsigned int		wlan_bintval;
 	unsigned int		wlan_retries_all;
 	unsigned int		wlan_retries_last;
@@ -317,7 +320,7 @@ struct config {
 	char			filtermac_enabled[MAX_FILTERMAC];
 	unsigned char		filterbssid[MAC_LEN];
 	unsigned int		filter_pkt;
-	u_int16_t		filter_stype[WLAN_NUM_TYPES];  /* one for MGMT, CTRL, DATA */
+	uint16_t		filter_stype[WLAN_NUM_TYPES];  /* one for MGMT, CTRL, DATA */
 	unsigned int		filter_mode;
 	unsigned int		filter_off:1,
 				filter_badfcs:1,
