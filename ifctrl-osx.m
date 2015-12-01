@@ -1,6 +1,7 @@
 /* horst - Highly Optimized Radio Scanning Tool
  *
  * Copyright (C) 2015 Bruno Randolf <br1@einfach.org>
+ * Copyright (C) 2015 Jeromy Fu <fuji246@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
