@@ -227,8 +227,11 @@ channel_auto_change(void)
 			if (new_idx >= channels.num_channels ||
 			    new_idx >= MAX_CHANNELS ||
 			    (conf.channel_max &&
-			     channel_get_chan(new_idx) > conf.channel_max))
+			     channel_get_chan(new_idx) > conf.channel_max)) {
 				new_idx = 0;
+				max_width = channel_get_band_from_idx(new_idx).max_chan_width;
+				conf.channel_ht40plus = true;
+			}
 
 			ret = channel_change(new_idx, max_width, conf.channel_ht40plus);
 
@@ -280,6 +283,9 @@ channel_init(void) {
 			if (!channel_change(conf.channel_idx, b.max_chan_width, true) &&
 			    !channel_change(conf.channel_idx, b.max_chan_width, false))
 				return false;
+		} else {
+			conf.channel_set_width = conf.channel_width;
+			conf.channel_set_ht40plus = conf.channel_ht40plus;
 		}
 	}
 	return true;

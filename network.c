@@ -31,6 +31,7 @@
 #include "util.h"
 #include "channel.h"
 #include "network.h"
+#include "display.h"
 
 
 extern struct config conf;
@@ -103,7 +104,7 @@ struct net_chan_list {
 } __attribute__ ((packed));
 
 
-#define PKT_INFO_VERSION	1
+#define PKT_INFO_VERSION	2
 
 struct net_packet_info {
 	struct net_header	proto;
@@ -115,9 +116,9 @@ struct net_packet_info {
 
 	/* wlan phy (from radiotap) */
 	int			phy_signal;	/* signal strength (usually dBm) */
-	int			phy_noise;	/* noise level (always 0) */
-	unsigned int		phy_snr;	/* signal to noise ratio (always 0, redundant!) */
 	unsigned int		phy_rate;	/* physical rate * 10 (= in 100kbps) */
+	unsigned char		phy_rate_idx;
+	unsigned char		phy_rate_flags;
 	unsigned int		phy_freq;	/* frequency */
 	unsigned int		phy_flags;	/* A, B, G, shortpre */
 
@@ -132,14 +133,18 @@ struct net_packet_info {
 	unsigned int		wlan_bintval;	/* beacon interval */
 	unsigned int		wlan_mode;	/* AP, STA or IBSS */
 	unsigned char		wlan_channel;	/* channel from beacon, probe */
+	unsigned char		wlan_chan_width;
+	unsigned char		wlan_tx_streams;
+	unsigned char		wlan_rx_streams;
 	unsigned char		wlan_qos_class;	/* for QDATA frames */
 	unsigned int		wlan_nav;	/* frame NAV duration */
 	unsigned int		wlan_seqno;	/* sequence number */
 
-#define PKT_WLAN_FLAG_WEP	0x1
-#define PKT_WLAN_FLAG_RETRY	0x2
-#define PKT_WLAN_FLAG_WPA	0x4
-#define PKT_WLAN_FLAG_RSN	0x8
+#define PKT_WLAN_FLAG_WEP	0x01
+#define PKT_WLAN_FLAG_RETRY	0x02
+#define PKT_WLAN_FLAG_WPA	0x04
+#define PKT_WLAN_FLAG_RSN	0x08
+#define PKT_WLAN_FLAG_HT40PLUS	0x10
 
 	/* bitfields are not portable - endianness is not guaranteed */
 	unsigned int		wlan_flags;
@@ -155,9 +160,6 @@ struct net_packet_info {
 #define PKT_BAT_FLAG_GW		0x1
 	unsigned char		bat_flags;
 	unsigned char		bat_pkt_type;
-
-	unsigned char		phy_rate_idx;
-	unsigned char		phy_rate_flags;
 } __attribute__ ((packed));
 
 
@@ -193,8 +195,6 @@ net_send_packet(struct packet_info *p)
 	np.version	= PKT_INFO_VERSION;
 	np.pkt_types	= htole32(p->pkt_types);
 	np.phy_signal	= htole32(p->phy_signal);
-	np.phy_noise	= htole32(0);
-	np.phy_snr	= htole32(0);
 	np.phy_rate	= htole32(p->phy_rate);
 	np.phy_rate_idx	= p->phy_rate_idx;
 	np.phy_rate_flags = p->phy_rate_flags;
@@ -210,6 +210,9 @@ net_send_packet(struct packet_info *p)
 	np.wlan_bintval	= htole32(p->wlan_bintval);
 	np.wlan_mode	= htole32(p->wlan_mode);
 	np.wlan_channel = p->wlan_channel;
+	np.wlan_chan_width = p->wlan_chan_width;
+	np.wlan_tx_streams = p->wlan_tx_streams;
+	np.wlan_rx_streams = p->wlan_rx_streams;
 	np.wlan_qos_class = p->wlan_qos_class;
 	np.wlan_nav	= htole32(p->wlan_nav);
 	np.wlan_seqno	= htole32(p->wlan_seqno);
@@ -222,6 +225,8 @@ net_send_packet(struct packet_info *p)
 		np.wlan_flags |= PKT_WLAN_FLAG_WPA;
 	if (p->wlan_rsn)
 		np.wlan_flags |= PKT_WLAN_FLAG_RSN;
+	if (p->wlan_ht40plus)
+		np.wlan_flags |= PKT_WLAN_FLAG_HT40PLUS;
 	np.wlan_flags	= htole32(np.wlan_flags);
 	np.ip_src	= p->ip_src;
 	np.ip_dst	= p->ip_dst;
@@ -272,7 +277,10 @@ net_receive_packet(unsigned char *buffer, size_t len)
 	p.wlan_tsf	= le64toh(np->wlan_tsf);
 	p.wlan_bintval	= le32toh(np->wlan_bintval);
 	p.wlan_mode	= le32toh(np->wlan_mode);
-	p.wlan_channel = np->wlan_channel;
+	p.wlan_channel	= np->wlan_channel;
+	p.wlan_chan_width = np->wlan_chan_width;
+	p.wlan_tx_streams = np->wlan_tx_streams;
+	p.wlan_rx_streams = np->wlan_rx_streams;
 	p.wlan_qos_class = np->wlan_qos_class;
 	p.wlan_nav	= le32toh(np->wlan_nav);
 	p.wlan_seqno	= le32toh(np->wlan_seqno);
@@ -285,6 +293,8 @@ net_receive_packet(unsigned char *buffer, size_t len)
 		p.wlan_wpa = 1;
 	if (np->wlan_flags & PKT_WLAN_FLAG_RSN)
 		p.wlan_rsn = 1;
+	if (np->wlan_flags & PKT_WLAN_FLAG_HT40PLUS)
+		p.wlan_ht40plus = 1;
 	p.ip_src	= np->ip_src;
 	p.ip_dst	= np->ip_dst;
 	p.tcpudp_port	= le32toh(np->tcpudp_port);
@@ -335,15 +345,32 @@ net_receive_conf_chan(unsigned char *buffer, size_t len)
 	conf.channel_time = le32toh(nc->dwell_time);
 
 	enum chan_width width = nc->width_ht40p & ~NET_WIDTH_HT40PLUS;
-	bool ht40p = nc->width_ht40p & NET_WIDTH_HT40PLUS;
+	bool ht40p = !!(nc->width_ht40p & NET_WIDTH_HT40PLUS);
 
-	if (cli_fd > -1 && nc->channel != conf.channel_idx) /* server */
-		channel_change(nc->channel, width, ht40p);
-	else { /* client */
-		conf.channel_idx = nc->channel;
-		conf.channel_width = width;
-		conf.channel_ht40plus = ht40p;
-		update_spectrum_durations();
+	if (nc->channel != conf.channel_idx ||
+	    width != conf.channel_width ||
+	    ht40p != conf.channel_ht40plus) { /* something changed */
+		if (cli_fd > -1) { /* server */
+			if (!channel_change(nc->channel, width, ht40p)) {
+				printlog("Net Channel %d %s is not available/allowed",
+					channel_get_chan(nc->channel),
+					channel_width_string(width, ht40p));
+				net_send_channel_config();
+			} else {
+				/* success: update UI */
+				conf.channel_set_num = channel_get_chan(nc->channel);
+				conf.channel_set_width = width;
+				conf.channel_set_ht40plus = ht40p;
+				update_display(NULL);
+			}
+		} else { /* client */
+			conf.channel_idx = nc->channel;
+			conf.channel_width = conf.channel_set_width = width;
+			conf.channel_ht40plus = conf.channel_set_ht40plus = ht40p;
+			conf.channel_set_num = channel_get_chan(nc->channel);
+			update_spectrum_durations();
+			update_display(NULL);
+		}
 	}
 
 	return sizeof(struct net_conf_chan);
